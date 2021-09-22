@@ -1,3 +1,4 @@
+
 from os import read
 import numpy as np
 
@@ -241,9 +242,9 @@ class Map_Obj():
         image.show()
 
 def main():
-    print("test")
-    Map_Obj.read_map('Samfundet_map_1.csv')
+    Map_Obj.__init__
     Map_Obj.show_map
+    
 
 if __name__ == "__main__":
     main()
