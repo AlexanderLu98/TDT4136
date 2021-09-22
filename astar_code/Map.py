@@ -52,7 +52,7 @@ class Map_Obj():
             start_pos = [27, 18]
             goal_pos = [40, 32]
             end_goal_pos = goal_pos
-            path_to_map = 'Samfundet_map_1.csv'
+            path_to_map = 'astar_code/Samfundet_map_1.csv'
         elif task == 2:
             start_pos = [40, 32]
             goal_pos = [8, 5]
@@ -242,8 +242,9 @@ class Map_Obj():
         image.show()
 
 def main():
-    Map_Obj.__init__
-    Map_Obj.show_map
+    test = Map_Obj()
+    test.show_map()
+    
     
 
 if __name__ == "__main__":
