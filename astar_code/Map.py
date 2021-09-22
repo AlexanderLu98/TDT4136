@@ -57,22 +57,22 @@ class Map_Obj():
             start_pos = [40, 32]
             goal_pos = [8, 5]
             end_goal_pos = goal_pos
-            path_to_map = 'Samfundet_map_1.csv'
+            path_to_map = 'astar_code/Samfundet_map_1.csv'
         elif task == 3:
             start_pos = [28, 32]
             goal_pos = [6, 32]
             end_goal_pos = goal_pos
-            path_to_map = 'Samfundet_map_2.csv'
+            path_to_map = 'astar_code/Samfundet_map_2.csv'
         elif task == 4:
             start_pos = [28, 32]
             goal_pos = [6, 32]
             end_goal_pos = goal_pos
-            path_to_map = 'Samfundet_map_Edgar_full.csv'
+            path_to_map = 'astar_code/Samfundet_map_Edgar_full.csv'
         elif task == 5:
             start_pos = [14, 18]
             goal_pos = [6, 36]
             end_goal_pos = [6, 7]
-            path_to_map = 'Samfundet_map_2.csv'
+            path_to_map = 'astar_code/Samfundet_map_2.csv'
 
         return start_pos, goal_pos, end_goal_pos, path_to_map
 
@@ -243,7 +243,16 @@ class Map_Obj():
 
 def main():
     test = Map_Obj()
+    """test.show_map()"""
+    print(test.str_map)
+    first = test.pick_move()
+    test.replace_map_values(first,"1",test.end_goal_pos)
     test.show_map()
+    print("testing for 10 iterations")
+    for x in range(10):
+        test.replace_map_values([10+x,10],"1",test.end_goal_pos)
+    test.show_map()
+
     
     
 
