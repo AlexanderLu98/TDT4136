@@ -1,3 +1,4 @@
+from os import read
 import numpy as np
 
 np.set_printoptions(threshold=np.inf, linewidth=300)
@@ -239,4 +240,10 @@ class Map_Obj():
         # Show image
         image.show()
 
+def main():
+    print("test")
+    Map_Obj.read_map('Samfundet_map_1.csv')
+    Map_Obj.show_map
+
 if __name__ == "__main__":
+    main()
