@@ -1,126 +1,164 @@
-from Map import *
+import Map
 
-class Node():
-    """A node class for A* Pathfinding"""
-
-    def __init__(self, parent=None, position=None):
-        self.parent = parent
+class search_Node:
+    def __init__(self, position = None, best_Parent = None):
+        
+        self.g = 0 #cost of getting to this node
+        self.h = 0 #estimated cost to goal
+        self.f = self.g + self.h #estimated total cost of a solution path going through this node
         self.position = position
-
-        self.g = 0
-        self.h = 0
-        self.f = 0
-
+        self.best_Parent = best_Parent
+        self.kids = []
+    
     def __eq__(self, other):
         return self.position == other.position
+    
+    def __gt__(self, other):
+        return (self.g + self.h) > (other.g + other.h)
+
+def manhattan_distance(map_obj, position):
+    """ Makes an admissible estimate cost goal """
+
+    goal = map_obj.get_goal_pos()
+    return abs(position[0] - goal[0]) + abs(position[1] - goal[1])
+
+def moving_manhattan(map_obj, position):
+    """ Uses manhattan distance to make an admissible estimate cost goal,
+        but considering known facts that our goal is moving 1/4 of our speed
+        in negative x-direction """
+
+    goal = map_obj.get_goal_pos()
+    goal_est = abs(position[0] - goal[0]) + abs(position[1] - goal[1]) #manhattan_distance()
+    displacement_est = goal_est / 4 # Friend is moving 1/4 of our speed
+    expected_goal = goal[0] - goal_est , goal[1]
+    return abs(position[0] - expected_goal[0]) + abs(position[1] - expected_goal[1]) #manhattan_distance()
 
 
-def astar(maze, start, end):
-    """Returns a list of tuples as a path from the given start to the given end in the given maze"""
 
-    # Create start and end node
-    start_node = Node(None, start)
-    start_node.g = start_node.h = start_node.f = 0
-    end_node = Node(None, end)
-    end_node.g = end_node.h = end_node.f = 0
+def cost_function(map_obj,next_pos):
+    """ Determines cost of a cell so that different cell costs are taken
+        account of in the total cost """
 
-    # Initialize both open and closed list
-    open_list = []
-    closed_list = []
+    return map_obj.get_cell_value(next_pos)
 
-    # Add the start node
-    open_list.append(start_node)
 
-    # Loop until you find the end
-    while len(open_list) > 0:
 
-        # Get the current node
-        current_node = open_list[0]
-        current_index = 0
-        for index, item in enumerate(open_list):
-            if item.f < current_node.f:
-                current_node = item
-                current_index = index
+def attach_and_eval(map_obj,child, parent, cost_function, heuristic_func):
+    """ Attaches a child node to a node that is now considered its best parent """
+    
+    child.best_parent = parent
+    child.g = parent.g + cost_function(map_obj, child.position)
+    child.h = heuristic_func(map_obj, child.position)
 
-        # Pop current off open list, add to closed list
-        open_list.pop(current_index)
-        closed_list.append(current_node)
+def propagate_path_improvements(map_obj, parent):
+    """ Propagation of path improvements through children and possible
+        many more descendants """
 
-        # Found the goal
-        if current_node == end_node:
+    for kid in parent.kid:
+        if parent.g + 1 < kid.g:
+            kid.best_Parent = parent
+            kid.g = parent.g + cost_function(map_obj, parent.position)
+            kid.f = kid.g + kid.h
+            propagate_path_improvements(map_obj, kid.position)
+
+
+def best_first_search(map_obj, heuristic_func, cost_func, tick):
+    """ Implementation of best first search based on handed out pseudocode """
+    
+    closed = []
+    open_ = []
+    #Generate initial node
+    start_node = search_Node(map_obj.get_start_pos())
+    goal_node = search_Node(map_obj.get_goal_pos())
+
+    start_node.g = 0
+    start_node.h = heuristic_func(map_obj, start_node.position)
+    start_node.h = start_node.g + start_node.h
+    open_.append(start_node)
+
+    #Agenda loop
+    while open_:
+        X = open_.pop(0)
+        closed.append(X)
+        if X == goal_node: #returns path when goal node is found
             path = []
-            current = current_node
-            while current is not None:
-                path.append(current.position)
-                current = current.parent
-            return path[::-1] # Return reversed path
+            current_node = X
+            while current_node is not None:
+                path.append(current_node.position)
+                current_node = current_node.best_Parent
+            return path
 
-        # Generate children
-        children = []
-        for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # Adjacent squares
+        kids = []
+        directions = {
+            "N": [0,1],
+            "S": [0,-1],
+            "W": [-1,0],
+            "E": [1,0]
+            }
 
-            # Get node position
-            node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
-
-            # Make sure within range
-            if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (len(maze[len(maze)-1]) -1) or node_position[1] < 0:
+        for direction in directions: #generating the nodes kids
+            kid_pos = [X.position[0] + directions[direction][0], X.position[1] + directions[direction][1]]
+            if cost_function(map_obj, kid_pos) == -1:
+            #if map_obj.int_map[kid_pos[0]][kid_pos[1]] == -1:
                 continue
+        
+            new_sn = search_Node(kid_pos, X)
+            kids.append(new_sn)
 
-            # Make sure walkable terrain
-            if maze[node_position[0]][node_position[1]] != 0:
-                continue
+        for kid in kids:
+            for node in open_:
+                if node == kid:
+                    kid = node
+            for node in closed:
+                if node == kid:
+                    kid = node
+        
+            X.kids.append(kid)
 
-            # Create new node
-            new_node = Node(current_node, node_position)
+            if kid not in open_ and kid not in closed:
+                attach_and_eval(map_obj, kid, X, cost_function, heuristic_func)
+                open_.append(kid)
+                open_.sort()
+            
+            elif X.g + cost_function(map_obj, kid.position) < kid.g:
+                attach_and_eval(map_obj, kid, X, cost_function, heuristic_func)
+                if kid in closed:
+                    propagate_path_improvements(map_obj, X)
 
-            # Append
-            children.append(new_node)
+        if tick is True:
+            map_obj.tick()
+            goal_node = search_Node(map_obj.get_goal_pos()) # update inside loop if goal changes during iterations
 
-        # Loop through children
-        for child in children:
 
-            # Child is on the closed list
-            for closed_child in closed_list:
-                if child == closed_child:
-                    continue
 
-            # Create the f, g, and h values
-            child.g = current_node.g + 1
-            child.h = ((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2)
-            child.f = child.g + child.h
+    return False
 
-            # Child is already in the open list
-            for open_node in open_list:
-                if child == open_node and child.g > open_node.g:
-                    continue
-
-            # Add the child to the open list
-            open_list.append(child)
-
-def converter(self, map):
-    for col in map:
-        for row in col:
-            print(row,col)
+def draw_path(map_obj, path):
+    for node_pos in path:
+        map_obj.set_cell_value(node_pos, "Q", True)
+        
 
 def main():
+    map_obj = Map.Map_Obj(task = 1)
+    start_position = map_obj.get_start_pos()
+    int_map, str_map = map_obj.get_maps()
+    goal_position = map_obj.get_goal_pos()
+
+    map_obj.show_map()
     
-    task1 = Map_Obj()
-    maze = task1.int_map
-    for i in range(47):
-        for j in range(39):
-            if maze[i][j] == 1:
-                maze[i][j] = 0
-            if maze[i][j] == -1:
-                maze[i][j] = 1
-    print(maze)
-    start = (task1.get_start_pos()[0], task1.get_start_pos()[1])
-    print(start)
-    end = (task1.goal_pos[0], task1.goal_pos[1])
-    print(end)
-
-    path = astar(maze, start, end)
-    print(path)
+    path = best_first_search(map_obj, manhattan_distance, cost_function)
+    print("Starting position: ", start_position)
+    print("Goal position: ", goal_position)
 
 
-if __name__ == '__main__':
+    try:
+        draw_path(map_obj, path)
+        print("Drawing path...")
+    except TypeError:
+        print("Path does not exist :( ")
+
+    map_obj.show_map()
+
+
+if __name__ == "__main__":
     main()
