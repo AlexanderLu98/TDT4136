@@ -1,86 +1,139 @@
 from Map import *
 
 class Node():
+    """A node class for A* Pathfinding"""
 
-    def __init__(self, parent=None, pos=None):
-        self.h = 0
-        self.g = 0
-        self.f = 0
+    def __init__(self, parent=None, position=None):
         self.parent = parent
-        self.pos = pos
-        self.moves = []
-        
-    def getMovesPos():
-        x = Node.pos[0]
-        y = Node.pos[1]
-        Node.moves.append([x+1,y])
-        Node.moves.append([x-1,y])
-        Node.moves.append([x,y+1])
-        Node.moves.append([x,y-1])
-        
-class Astar():
-    def __init__(self, task):
-        self.map = Map_Obj(task)
-        
+        self.position = position
 
-    def algorithm(self):
-        open = []
-        closed = []
-        start_node = Node(None, self.map.get_start_pos())
-        start_node.h = start_node.g = start_node.f = 0
-        open.append(start_node)
-        end_node = Node(None, self.map.get_end_goal_pos())
+        self.g = 0
+        self.h = 0
+        self.f = 0
 
-        """Loop"""
-        while len(open)>0:
-            current_node = open[0]
-            current_index = 0
-            for index, item in enumerate(open):
-                if item.f < current_node.f:
-                    current_node=item
-                    current_index=index
-                
-            open.pop(current_index)
-            closed.append(current_node)
+    def __eq__(self, other):
+        return self.position == other.position
 
-            """GoalChecker"""
-            if current_node == end_node:
-                path=[]
-                current= current_node
-                while current is not None:
-                    path.append(current.pos)
-                    current_node = current.parent
-                return path[::-1]
-            
-            childrenList = current_node.getMovesPos()
-            children = []
-            for item in enumerate(childrenList):
-                childrenNode = Node(current_node, item)
-                children.append(childrenNode)
 
-            for node in children:
-                for item in closed:
-                    if item == node:
-                        continue
-                node.g=current_node.g + 1
-                """Pythogoras"""
-                node.h= ((node.pos[0]-end_node.pos[0])**2 + (node.pos[1]-end_node.pos[1])**2)
-                node.f=node.g+node.h
-            
-                for item in open:
-                    if node == item and node.g > item.g:
-                        continue
-                open.append(node) 
-        
+def astar(maze, start, end):
+    """Returns a list of tuples as a path from the given start to the given end in the given maze"""
 
+    # Create start and end node
+    start_node = Node(None, start)
+    start_node.g = start_node.h = start_node.f = 0
+    end_node = Node(None, end)
+    end_node.g = end_node.h = end_node.f = 0
+
+    # Initialize both open and closed list
+    open_list = []
+    closed_list = []
+
+    # Add the start node
+    open_list.append(start_node)
+
+    # Loop until you find the end
+    while len(open_list) > 0:
+
+        # Get the current node
+        current_node = open_list[0]
+        current_index = 0
+        for index, item in enumerate(open_list):
+            if item.f < current_node.f:
+                current_node = item
+                current_index = index
+
+        # Pop current off open list, add to closed list
+        open_list.pop(current_index)
+        closed_list.append(current_node)
+
+        # Found the goal
+        if current_node == end_node:
+            path = []
+            current = current_node
+            while current is not None:
+                path.append(current.position)
+                current = current.parent
+            return path[::-1] # Return reversed path
+
+        # Generate children
+        children = []
+        for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # Adjacent squares
+
+            # Get node position
+            node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
+
+            # Make sure within range
+            if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (len(maze[len(maze)-1]) -1) or node_position[1] < 0:
+                continue
+
+            # Make sure walkable terrain
+            if maze[node_position[0]][node_position[1]] != 0:
+                continue
+
+            # Create new node
+            new_node = Node(current_node, node_position)
+
+            # Append
+            children.append(new_node)
+
+        # Loop through children
+        for child in children:
+
+            # Child is on the closed list
+            for closed_child in closed_list:
+                if child == closed_child:
+                    continue
+
+            # Create the f, g, and h values
+            child.g = current_node.g + 1
+            child.h = ((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2)
+            child.f = child.g + child.h
+
+            # Child is already in the open list
+            for open_node in open_list:
+                if child == open_node and child.g > open_node.g:
+                    continue
+
+            # Add the child to the open list
+            open_list.append(child)
+
+def converter(self, map):
+    for col in map:
+        for row in col:
+            print(row,col)
 
 def main():
-    test=Astar(1)
-    map = test.map.int_map
-    start = test.map.get_start_pos()
-    end = test.map.get_end_goal_pos()
-    path = test.algorithm()
+    """maze = [[1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+
+    start = (0, 0)
+    end = (7, 6)"""
+    
+    task1 = Map_Obj()
+    maze = task1.int_map
+    for i in range(47):
+        for j in range(39):
+            if maze[i][j] == 1:
+                maze[i][j] = 0
+            if maze[i][j] == -1:
+                maze[i][j] = 1
+    print(maze)
+    start = (task1.get_start_pos()[0], task1.get_start_pos()[1])
+    print(start)
+    end = (task1.get_end_goal_pos()[0], task1.get_end_goal_pos()[1])
+    print(end)
+
+    path = astar(maze, start, end)
     print(path)
 
-if __name__=="__main__":
+
+if __name__ == '__main__':
     main()
