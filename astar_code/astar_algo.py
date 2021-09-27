@@ -103,19 +103,6 @@ def converter(self, map):
             print(row,col)
 
 def main():
-    """maze = [[1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, -1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
-
-    start = (0, 0)
-    end = (7, 6)"""
     
     task1 = Map_Obj()
     maze = task1.int_map
@@ -128,7 +115,7 @@ def main():
     print(maze)
     start = (task1.get_start_pos()[0], task1.get_start_pos()[1])
     print(start)
-    end = (task1.get_end_goal_pos()[0], task1.get_end_goal_pos()[1])
+    end = (task1.goal_pos[0], task1.goal_pos[1])
     print(end)
 
     path = astar(maze, start, end)
