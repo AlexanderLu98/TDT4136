@@ -13,7 +13,7 @@ def main():
 
         map_obj.show_map() # Show map with start and goal
 
-        path = a.best_first_search(map_obj, a.manhattan_distance, a.cost_function, False)
+        path = a.best_first_search(map_obj, a.manhattan_distance, a.cost_function)
 
         print("Starting position: ", start_position)
         print("Goal position: ", goal_position)

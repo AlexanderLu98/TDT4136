@@ -21,19 +21,9 @@ def manhattan_distance(map_obj, position):
 
     goal = map_obj.get_goal_pos()
     return abs(position[0] - goal[0]) + abs(position[1] - goal[1])
-
-def moving_manhattan(map_obj, position):
-    """ Uses manhattan distance to make an admissible estimate cost goal,
-        but considering known facts that our goal is moving 1/4 of our speed
-        in negative x-direction """
-
-    goal = map_obj.get_goal_pos()
-    goal_est = abs(position[0] - goal[0]) + abs(position[1] - goal[1]) #manhattan_distance()
-    displacement_est = goal_est / 4 # Friend is moving 1/4 of our speed
-    expected_goal = goal[0] - goal_est , goal[1]
-    return abs(position[0] - expected_goal[0]) + abs(position[1] - expected_goal[1]) #manhattan_distance()
-
-
+    
+def euclidean_distance(map_obj, position):
+    pass
 
 def cost_function(map_obj,next_pos):
     """ Determines cost of a cell so that different cell costs are taken
@@ -62,7 +52,7 @@ def propagate_path_improvements(map_obj, parent):
             propagate_path_improvements(map_obj, kid.position)
 
 
-def best_first_search(map_obj, heuristic_func, cost_func, tick):
+def best_first_search(map_obj, heuristic_func, cost_func):
     """ Implementation of best first search based on handed out pseudocode """
     
     closed = []
@@ -124,18 +114,11 @@ def best_first_search(map_obj, heuristic_func, cost_func, tick):
                 attach_and_eval(map_obj, kid, X, cost_function, heuristic_func)
                 if kid in closed:
                     propagate_path_improvements(map_obj, X)
-
-        if tick is True:
-            map_obj.tick()
-            goal_node = search_Node(map_obj.get_goal_pos()) # update inside loop if goal changes during iterations
-
-
-
     return False
 
 def draw_path(map_obj, path):
     for node_pos in path:
-        map_obj.set_cell_value(node_pos, "Q", True)
+        map_obj.set_cell_value(node_pos, "Yellow", True)
         
 
 def main():
