@@ -1,147 +1,124 @@
 import Map
+from scipy.spatial import distance
 
-class search_Node:
-    def __init__(self, position = None, best_Parent = None):
-        
-        self.g = 0 #cost of getting to this node
-        self.h = 0 #estimated cost to goal
-        self.f = self.g + self.h #estimated total cost of a solution path going through this node
-        self.position = position
+class Node:
+    def __init__(self, pos = None, best_Parent = None):
+        """"
+        set g, h, and f to zero. Child node's g, h and f will later 
+        be updated. Set a parent for the node and an empty list of its
+        'children to be'
+        """
+        self.g = self.h = self.f = 0
+        self.pos = pos
         self.best_Parent = best_Parent
-        self.kids = []
+        self.children = []
     
     def __eq__(self, other):
-        return self.position == other.position
+        """ Method for comparing nodes """
+        return self.pos == other.pos
     
     def __gt__(self, other):
+        """ Method for comparing nodes"""
         return (self.g + self.h) > (other.g + other.h)
 
-def manhattan_distance(map_obj, position):
-    """ Makes an admissible estimate cost goal """
+def draw(map_obj, path):
+    """ Draws the yellow path from start position to the goal position on the map"""
+    for node_pos in path:
+        map_obj.set_cell_value(node_pos, "Anything", True)
 
-    goal = map_obj.get_goal_pos()
-    return abs(position[0] - goal[0]) + abs(position[1] - goal[1])
-    
-def euclidean_distance(map_obj, position):
-    pass
-
-def cost_function(map_obj,next_pos):
-    """ Determines cost of a cell so that different cell costs are taken
-        account of in the total cost """
-
+def cost(map_obj,next_pos):
+    """ return the cost of moving from a
+    node to another node """
     return map_obj.get_cell_value(next_pos)
 
-
-
-def attach_and_eval(map_obj,child, parent, cost_function, heuristic_func):
-    """ Attaches a child node to a node that is now considered its best parent """
-    
+def attach_best_parent(map_obj, child, parent, cost, heuristic):
+    """ Attach the best known parent node to the child node"""
     child.best_parent = parent
-    child.g = parent.g + cost_function(map_obj, child.position)
-    child.h = heuristic_func(map_obj, child.position)
+    child.g = parent.g + cost(map_obj, child.pos)
+    child.h = heuristic(map_obj, child.pos)    
 
-def propagate_path_improvements(map_obj, parent):
-    """ Propagation of path improvements through children and possible
-        many more descendants """
+def prop_impr(map_obj, parent):
+    """ Propagate improved paths through the grid of nodes"""
+    for child in parent.child:
+        if parent.g + 1 < child.g:
+            child.best_Parent = parent
+            child.g = parent.g + cost(map_obj, parent.pos)
+            child.f = child.g + child.h
+            prop_impr(map_obj, child.pos)
 
-    for kid in parent.kid:
-        if parent.g + 1 < kid.g:
-            kid.best_Parent = parent
-            kid.g = parent.g + cost_function(map_obj, parent.position)
-            kid.f = kid.g + kid.h
-            propagate_path_improvements(map_obj, kid.position)
+def euclidean_distance(map_obj, pos):
+    """" Calculate and return the Euclidean distance
+    from this node to the goal node"""
+    goal = map_obj.get_goal_pos()
+    return abs(distance.euclidean(pos, goal))
 
-
-def best_first_search(map_obj, heuristic_func, cost_func):
-    """ Implementation of best first search based on handed out pseudocode """
-    
+def best_first_search(map_obj, heuristic, cost):
+    """ Perform the A* best-first search"""
+    # initiate lists to keep track of open and closed nodes
+    open = []
     closed = []
-    open_ = []
-    #Generate initial node
-    start_node = search_Node(map_obj.get_start_pos())
-    goal_node = search_Node(map_obj.get_goal_pos())
+    # Initiate start and end nodes
+    start_node = Node(map_obj.get_start_pos())
+    goal_node = Node(map_obj.get_goal_pos())
 
-    start_node.g = 0
-    start_node.h = heuristic_func(map_obj, start_node.position)
-    start_node.h = start_node.g + start_node.h
-    open_.append(start_node)
+    # Put the start node in the open list, and start 
+    # working through the nodes via the agenda loop
+    open.append(start_node)
 
-    #Agenda loop
-    while open_:
-        X = open_.pop(0)
-        closed.append(X)
-        if X == goal_node: #returns path when goal node is found
+    # The agenda loop
+    while open:
+        temp = open.pop(0)
+        closed.append(temp)
+        # If the goal node is reached, return it.
+        # Builds the path by working "backwards" 
+        # from current node, and all parents all the
+        # the way back to the start node
+        if temp == goal_node:
             path = []
-            current_node = X
+            current_node = temp
             while current_node is not None:
-                path.append(current_node.position)
+                path.append(current_node.pos)
                 current_node = current_node.best_Parent
             return path
+        # If we have not reached the goal node, start expanding the 
+        # children of temp, and appending them to the open list 
+        # of "nodes to explore"
+        children = []
 
-        kids = []
-        directions = {
-            "N": [0,1],
-            "S": [0,-1],
-            "W": [-1,0],
-            "E": [1,0]
-            }
-
-        for direction in directions: #generating the nodes kids
-            kid_pos = [X.position[0] + directions[direction][0], X.position[1] + directions[direction][1]]
-            if cost_function(map_obj, kid_pos) == -1:
-            #if map_obj.int_map[kid_pos[0]][kid_pos[1]] == -1:
+        for neighbour in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+            child_pos = [temp.pos[0] + neighbour[0], temp.pos[1] + neighbour[1]]
+            if cost(map_obj, child_pos) == -1:
                 continue
         
-            new_sn = search_Node(kid_pos, X)
-            kids.append(new_sn)
+            new_child = Node(child_pos, temp)
+            children.append(new_child)
 
-        for kid in kids:
-            for node in open_:
-                if node == kid:
-                    kid = node
+        # If the node is open, then it is the same node, but it is 
+        # a child/parent of several nodes 
+        # If the node is already closed, we are done with it. 
+        for child in children:
+            for node in open:
+                if node == child:
+                    child = node
             for node in closed:
-                if node == kid:
-                    kid = node
+                if node == child:
+                    child = node
         
-            X.kids.append(kid)
+            temp.children.append(child)
 
-            if kid not in open_ and kid not in closed:
-                attach_and_eval(map_obj, kid, X, cost_function, heuristic_func)
-                open_.append(kid)
-                open_.sort()
+            # if the child is not in open or closed, then the node temp 
+            # is the best (known) node for this child, as it is the first
+            # time we encounter it 
+            if child not in open and child not in closed:
+                attach_best_parent(map_obj, child, temp, cost, heuristic)
+                open.append(child)
+                open.sort()
             
-            elif X.g + cost_function(map_obj, kid.position) < kid.g:
-                attach_and_eval(map_obj, kid, X, cost_function, heuristic_func)
-                if kid in closed:
-                    propagate_path_improvements(map_obj, X)
+            # if the cost of moving to the child plus the heuristic estimate to the 
+            # goal is less than the cost of getting to the node
+            # the child node attaches this as its best parent node
+            elif temp.g + cost(map_obj, child.pos) < child.g:
+                attach_best_parent(map_obj, child, temp, cost, heuristic)
+                if child in closed:
+                    prop_impr(map_obj, temp)
     return False
-
-def draw_path(map_obj, path):
-    for node_pos in path:
-        map_obj.set_cell_value(node_pos, "Yellow", True)
-        
-
-def main():
-    map_obj = Map.Map_Obj(task = 1)
-    start_position = map_obj.get_start_pos()
-    int_map, str_map = map_obj.get_maps()
-    goal_position = map_obj.get_goal_pos()
-
-    map_obj.show_map()
-    
-    path = best_first_search(map_obj, manhattan_distance, cost_function)
-    print("Starting position: ", start_position)
-    print("Goal position: ", goal_position)
-
-
-    try:
-        draw_path(map_obj, path)
-        print("Drawing path...")
-    except TypeError:
-        print("Path does not exist :( ")
-
-    map_obj.show_map()
-
-
-if __name__ == "__main__":
-    main()
