@@ -240,23 +240,3 @@ class Map_Obj():
                                y * scale + j] = colors[map[y][x]]
         # Show image
         image.show()
-
-def main():
-    test = Map_Obj()
-    """test.show_map()"""
-    """test.show_map()
-    print(test.str_map)
-    first = test.pick_move()
-    test.replace_map_values(first,"1",test.end_goal_pos)
-    test.show_map()
-    print("testing for 10 iterations")
-    for x in range(10):
-        test.replace_map_values([10+x,10],"1",test.end_goal_pos)
-    test.show_map()"""
-    print(test.int_map)
-
-    
-    
-
-if __name__ == "__main__":
-    main()
